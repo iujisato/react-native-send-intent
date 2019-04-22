@@ -105,7 +105,7 @@ public class RNSendIntentModule extends ReactContextBaseJavaModule {
         while(it.hasNextKey()) {
             String key = it.nextKey();
             ReadableType type = extras.getType(key);
-            
+
             switch (type) {
                 case Boolean:
                     intent.putExtra(key, extras.getBoolean(key));
@@ -287,6 +287,21 @@ public class RNSendIntentModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void sendSms(String phoneNumberString, String body) {
       Intent sendIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("sms:" + phoneNumberString.trim()));
+      sendIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+      if (body != null) {
+        sendIntent.putExtra("sms_body", body);
+      }
+
+      //Check that an app exists to receive the intent
+      if (sendIntent.resolveActivity(this.reactContext.getPackageManager()) != null) {
+        this.reactContext.startActivity(sendIntent);
+      }
+    }
+
+    @ReactMethod
+    public void sendMultipleSms(ReadableArray phoneNumberArray, String body) {
+      Intent sendIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("sms:" + String.join(";", phoneNumberArray)));
       sendIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
       if (body != null) {
@@ -515,7 +530,7 @@ public class RNSendIntentModule extends ReactContextBaseJavaModule {
 
         ArrayList<Object> readable = option.toArrayList();
         Intent intent = new Intent(Intent.ACTION_SEND_MULTIPLE);
- 
+
           String name = Intent.EXTRA_TEXT;
           ArrayList<Object> values = new ArrayList<>();
 
@@ -565,9 +580,9 @@ public class RNSendIntentModule extends ReactContextBaseJavaModule {
             sendIntent.setDataAndType(uri, mimeType);
         else
             sendIntent.setData(uri);
-        
+
         sendIntent.setPackage(packageName);
-        
+
         if (!parseExtras(extras, sendIntent)) {
             promise.resolve(false);
             return;
